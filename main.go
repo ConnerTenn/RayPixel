@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/veandco/go-sdl2/sdl"
@@ -22,12 +23,14 @@ func main() {
 	tex := NewTexture(renderer, windowWidth, windowHeight)
 	defer tex.Destroy()
 
+	ticker := time.NewTicker(100 * time.Millisecond)
 	start := time.Now()
+	last := start
 	running := true
 	for running {
 		now := time.Now()
-		dt := now.Sub(start)
-		_ = dt
+		dt := now.Sub(last)
+		last = now
 
 		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
 			switch event.(type) {
@@ -45,5 +48,11 @@ func main() {
 		tex.Update()
 
 		renderer.Present()
+
+		select {
+		case <-ticker.C:
+			fmt.Print("\rFrameRate:", int(1.0/dt.Seconds()))
+		default:
+		}
 	}
 }
