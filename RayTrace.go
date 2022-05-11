@@ -2,6 +2,7 @@ package main
 
 import (
 	"math"
+	"sync"
 
 	v2 "github.com/deeean/go-vector/vector2"
 	v3 "github.com/deeean/go-vector/vector3"
@@ -40,4 +41,19 @@ func RayDir(fov float64, x int, y int, width int, height int) *v3.Vector3 {
 }
 
 func Render(tex *Texture) {
+	wait := sync.WaitGroup{}
+	for y := 0; y < tex.Height; y++ {
+		wait.Add(1)
+		go func(y int) {
+			for x := 0; x < tex.Width; x++ {
+				tex.Set(x, y, Pixel{
+					Red:   byte(255 * (x + y) / (tex.Width + tex.Height)),
+					Green: byte(255 * x / tex.Width),
+					Blue:  byte(255 * y / tex.Height),
+				})
+			}
+			wait.Done()
+		}(y)
+	}
+	wait.Wait()
 }
