@@ -63,12 +63,12 @@ func ToRadians(degrees float64) float64 {
 
 func RayDir(fov float64, x int, y int, width int, height int) *v3.Vector3 {
 	size := v2.New(float64(width), float64(height))
-	xy := v2.New(float64(x), float64(y)).Sub(size.DivScalar(2.0))
+	xz := v2.New(float64(x), float64(y)).Sub(size.DivScalar(2.0))
 
 	halfFov := math.Tan(ToRadians(90.0 - fov*0.5))
-	z := size.Y * 0.5 * halfFov
+	ypart := size.Y * 0.5 * halfFov
 
-	return v3.New(xy.X, xy.Y, -z).Normalize()
+	return v3.New(xz.X, ypart, -xz.Y).Normalize()
 }
 
 func RayTrace(ray Ray) {
@@ -77,9 +77,9 @@ func RayTrace(ray Ray) {
 func Render(tex *Texture) {
 
 	tri := Triangle{
-		P1: &v3.Vector3{X: -1, Y: 0, Z: -3},
-		P2: &v3.Vector3{X: 1, Y: 0, Z: -3},
-		P3: &v3.Vector3{X: 0, Y: 1, Z: -3},
+		P1: &v3.Vector3{X: -1, Y: 3, Z: 0},
+		P2: &v3.Vector3{X: 1, Y: 3, Z: 0},
+		P3: &v3.Vector3{X: 0, Y: 3, Z: 1},
 	}
 
 	wait := sync.WaitGroup{}
