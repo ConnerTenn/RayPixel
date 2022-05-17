@@ -9,7 +9,7 @@ import (
 )
 
 const Epsilon float64 = 0.000001
-const MaxBounces int = 20
+const MaxBounces int = 3
 
 type Ray struct {
 	Pos *v3.Vector3
@@ -49,24 +49,51 @@ func (ray *Ray) Intersect(tri *Triangle) (bool, v3.Vector3, v3.Vector3) {
 	v := -edge1.Dot(da0) * invDet
 	t := a0.Dot(n) * invDet
 
-	intersect := det >= Epsilon && t >= 0.0 && u >= 0.0 && v >= 0.0 && (u+v) <= 1.0
+	intersect := math.Abs(det) >= Epsilon && t >= 0.0 && u >= 0.0 && v >= 0.0 && (u+v) <= 1.0
 
 	intersection := *ray.Pos.Add(ray.Dir.MulScalar(t))
 	barry := v3.Vector3{X: u, Y: v, Z: 1.0 - u - v}
 	return intersect, intersection, barry
 }
 
-func rotationXY(vec *v3.Vector3, x float64, y float64) *v3.Vector3 {
-	cosX := math.Cos(x)
-	cosY := math.Cos(y)
-	sinX := math.Sin(x)
-	sinY := math.Sin(y)
+func (tri *Triangle) Normal() *v3.Vector3 {
+	edge1 := tri.P2.Sub(tri.P1)
+	edge2 := tri.P3.Sub(tri.P1)
+	return edge1.Cross(edge2).Normalize()
+}
 
-	row1 := v3.New(cosY, 0.0, -sinY)
-	row2 := v3.New(sinY*sinX, cosX, cosY*sinX)
-	row3 := v3.New(sinY*cosX, -sinX, cosY*cosX)
+// func rotationXY(vec *v3.Vector3, x float64, y float64) *v3.Vector3 {
+// 	cosX := math.Cos(x)
+// 	cosY := math.Cos(y)
+// 	sinX := math.Sin(x)
+// 	sinY := math.Sin(y)
 
-	return vec.Mul(row1).Mul(row2).Mul(row3)
+// 	row1 := v3.New(cosY, 0.0, -sinY)
+// 	row2 := v3.New(sinY*sinX, cosX, cosY*sinX)
+// 	row3 := v3.New(sinY*cosX, -sinX, cosY*cosX)
+
+// 	return vec.Mul(row1).Mul(row2).Mul(row3)
+// }
+
+//https://en.wikipedia.org/wiki/Rodrigues%27_rotation_formula
+func RotateV3(vec *v3.Vector3, axis *v3.Vector3, angle float64) *v3.Vector3 {
+	cos := math.Cos(angle)
+	sin := math.Sin(angle)
+
+	t1 := vec.MulScalar(cos)
+	t2 := axis.Cross(vec).MulScalar(sin)
+	t3 := axis.MulScalar(axis.Dot(vec) * (1.0 - sin))
+
+	return t1.Add(t2).Add(t3)
+}
+
+func PerpendicularV3(vec *v3.Vector3) *v3.Vector3 {
+	return &v3.Vector3{X: vec.Y, Y: vec.Z, Z: vec.X}
+}
+
+//http://www.3dkingdoms.com/weekly/weekly.php?a=2
+func ReflectV3(vec *v3.Vector3, normal *v3.Vector3) *v3.Vector3 {
+	return normal.MulScalar(-2.0 * vec.Dot(normal)).Add(vec)
 }
 
 func ToRadians(degrees float64) float64 {
@@ -83,24 +110,38 @@ func RayDir(fov float64, x int, y int, width int, height int) *v3.Vector3 {
 	return v3.New(xz.X, ypart, -xz.Y).Normalize()
 }
 
-func RayTrace(ray Ray, triangles *[]Triangle) float64 {
+func RayCast(ray Ray, triangles *[]Triangle) float64 {
 	var intersected *Triangle = nil
+	var iPos *v3.Vector3
 	depth := math.MaxFloat64
 	for i, tri := range *triangles {
-		intersect, iPos, _ := ray.Intersect(&tri)
+		intersect, ipos, _ := ray.Intersect(&tri)
 
 		if intersect {
-			dist := ray.Pos.Distance(&iPos)
+			dist := ray.Pos.Distance(&ipos)
 			if dist < depth {
 				intersected = &(*triangles)[i]
 				depth = dist
+				iPos = ipos.Copy()
 			}
 		}
 	}
 
 	if intersected != nil {
-		return intersected.Mat.GetColour()
+		colour := intersected.Mat.GetColour()
+		if ray.Bounces == MaxBounces-1 {
+			return colour
+		}
+
+		nextray := intersected.Mat.NextRay(ray, intersected.Normal(), iPos)
+		nextcolour := RayCast(nextray, triangles)
+
+		return colour * nextcolour
 	} else {
+		mag := (ray.Dir.Dot(&v3.Vector3{Z: 1}) + 0.5)
+		if mag > 0 {
+			return mag
+		}
 		return 0
 	}
 }
@@ -111,16 +152,34 @@ func Render(tex *Texture) {
 
 	triangles := []Triangle{
 		{
-			P1:  &v3.Vector3{X: -1, Y: 3, Z: 0},
-			P2:  &v3.Vector3{X: 1, Y: 3, Z: 0},
-			P3:  &v3.Vector3{X: 0, Y: 3, Z: 1},
-			Mat: Material{Colour: 1},
+			P1:  v3.New(-100, 100, 0),
+			P2:  v3.New(100, -100, 0),
+			P3:  v3.New(100, 100, 0),
+			Mat: Material{Colour: 0.5},
 		},
 		{
-			P1:  &v3.Vector3{X: 0, Y: 5, Z: 1},
-			P2:  &v3.Vector3{X: 2, Y: 5, Z: 1},
-			P3:  &v3.Vector3{X: 1, Y: 5, Z: 2},
+			P1:  v3.New(-100, 100, 0),
+			P2:  v3.New(100, -100, 0),
+			P3:  v3.New(-100, -100, 0),
 			Mat: Material{Colour: 0.5},
+		},
+		{
+			P1:  v3.New(-1, 3, 0),
+			P2:  v3.New(1, 3, 0),
+			P3:  v3.New(0, 2, 1),
+			Mat: Material{Colour: 0.8},
+		},
+		{
+			P1:  v3.New(-0.5, 4, 0.5),
+			P2:  v3.New(1.5, 4, 0.5),
+			P3:  v3.New(0.5, 3.8, 1.5),
+			Mat: Material{Colour: 0.5},
+		},
+		{
+			P1:  v3.New(-2, 4, 0),
+			P2:  v3.New(-2, 7, 5),
+			P3:  v3.New(-5, 7, 5),
+			Mat: Material{Colour: 1},
 		},
 	}
 	t += 3.1415 / 60.0
@@ -131,15 +190,17 @@ func Render(tex *Texture) {
 		go func(y int) {
 			for x := 0; x < tex.Width; x++ {
 				ray := Ray{
-					Pos: &v3.Vector3{X: math.Sin(t), Y: 0, Z: 0},
+					Pos: &v3.Vector3{X: 2 * math.Sin(t), Y: 2*math.Cos(t) - 4, Z: 2},
 					Dir: RayDir(50, x, y, tex.Width, tex.Height),
 				}
 
-				colour := RayTrace(ray, &triangles)
+				colour := RayCast(ray, &triangles)
+
+				rgb := uint8(math.Max(math.Min(255*colour, 255), 0))
 				tex.Set(x, y, Pixel{
-					Red:   uint8(255 * colour),
-					Green: uint8(255 * colour),
-					Blue:  uint8(255 * colour),
+					Red:   rgb,
+					Green: rgb,
+					Blue:  rgb,
 				})
 			}
 			wait.Done()
