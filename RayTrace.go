@@ -83,7 +83,26 @@ func RayDir(fov float64, x int, y int, width int, height int) *v3.Vector3 {
 	return v3.New(xz.X, ypart, -xz.Y).Normalize()
 }
 
-func RayTrace(ray Ray) {
+func RayTrace(ray Ray, triangles *[]Triangle) float64 {
+	var intersected *Triangle = nil
+	depth := math.MaxFloat64
+	for i, tri := range *triangles {
+		intersect, iPos, _ := ray.Intersect(&tri)
+
+		if intersect {
+			dist := ray.Pos.Distance(&iPos)
+			if dist < depth {
+				intersected = &(*triangles)[i]
+				depth = dist
+			}
+		}
+	}
+
+	if intersected != nil {
+		return intersected.Mat.GetColour()
+	} else {
+		return 0
+	}
 }
 
 var t float64
@@ -116,38 +135,12 @@ func Render(tex *Texture) {
 					Dir: RayDir(50, x, y, tex.Width, tex.Height),
 				}
 
-				var intersected *Triangle = nil
-				depth := math.MaxFloat64
-				for i, tri := range triangles {
-					intersect, iPos, _ := ray.Intersect(&tri)
-
-					if intersect {
-						dist := ray.Pos.Distance(&iPos)
-						if dist < depth {
-							intersected = &triangles[i]
-							depth = dist
-						}
-					}
-				}
-
-				if intersected != nil {
-					// tex.Set(x, y, Pixel{
-					// 	Red:   byte(255 * (x + y) / (tex.Width + tex.Height)),
-					// 	Green: byte(255 * x / tex.Width),
-					// 	Blue:  byte(255 * y / tex.Height),
-					// })
-					tex.Set(x, y, Pixel{
-						Red:   uint8(255 * intersected.Mat.GetColour()),
-						Green: uint8(255 * intersected.Mat.GetColour()),
-						Blue:  uint8(255 * intersected.Mat.GetColour()),
-					})
-				} else {
-					tex.Set(x, y, Pixel{
-						Red:   0,
-						Green: 0,
-						Blue:  0,
-					})
-				}
+				colour := RayTrace(ray, &triangles)
+				tex.Set(x, y, Pixel{
+					Red:   uint8(255 * colour),
+					Green: uint8(255 * colour),
+					Blue:  uint8(255 * colour),
+				})
 			}
 			wait.Done()
 		}(y)
