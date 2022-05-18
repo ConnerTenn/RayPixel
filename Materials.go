@@ -48,10 +48,21 @@ func (col Colour) DivScalar(scalar float64) Colour {
 
 type Material struct {
 	SurfaceColour Colour
+	Diffuse       float64
+	Metallic      float64
 }
 
-func (mat Material) GetColour() Colour {
-	return mat.SurfaceColour
+//Calculate colour based on light that falls on it
+func (mat Material) CalculateColour(diffuse Colour, metallic Colour) Colour {
+	var colour Colour
+
+	total := mat.Diffuse + mat.Metallic
+
+	colour = mat.SurfaceColour.Mul(diffuse.MulScalar(mat.Diffuse))
+
+	colour = colour.Add(metallic.MulScalar(mat.Metallic)).DivScalar(total)
+
+	return colour
 }
 
 var rseed uint
@@ -65,17 +76,23 @@ func FastRandF() float64 {
 }
 
 //https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-overview/light-transport-ray-tracing-whitted
-func (mat Material) NextRay(incoming Ray, normal Vec3, collide Vec3) Ray {
 
-	diffuseDir := normal.Perpendicular().Lerp(normal, FastRandF()).Rotate(normal, FastRandF()*math.Pi*2.0)
-	// diffuseDir := v3.New(FastRandF()*2-1, FastRandF()*2-1, FastRandF()*2-1).Normalize()
-	// if diffuseDir.Dot(normal) < 0 {
-	// 	diffuseDir = diffuseDir.MulScalar(-1)
-	// }
-	// diffuseDir := incoming.Dir.Reflect(normal).Normalize()
+func DiffuseRay(incoming Ray, normal Vec3, collide Vec3) Ray {
+
+	dir := normal.Perpendicular().Lerp(normal, FastRandF()).Rotate(normal, FastRandF()*math.Pi*2.0)
 
 	return Ray{
 		Pos: collide,
-		Dir: diffuseDir,
+		Dir: dir,
+	}
+}
+
+func MetallicRay(incoming Ray, normal Vec3, collide Vec3) Ray {
+
+	dir := incoming.Dir.Reflect(normal).Normalize()
+
+	return Ray{
+		Pos: collide,
+		Dir: dir,
 	}
 }

@@ -24,6 +24,7 @@ type Triangle struct {
 	P3 Vec3
 
 	Mat Material
+	Col Colour
 }
 
 //https://stackoverflow.com/questions/42740765/intersection-between-line-and-triangle-in-3d
@@ -69,7 +70,7 @@ func RayDir(fov float64, x int, y int, width int, height int) Vec3 {
 	return NewVec3(xz.X, ypart, -xz.Y).Normalize()
 }
 
-func RayCast(ray Ray, triangles *[]Triangle, bounces int, lastTri int) Colour {
+func (ray Ray) RayCast(triangles *[]Triangle, bounces int, lastTri int) Colour {
 	var nearest *Triangle = nil
 	var hitPos Vec3
 	hitI := -1
@@ -94,15 +95,20 @@ func RayCast(ray Ray, triangles *[]Triangle, bounces int, lastTri int) Colour {
 	}
 
 	if nearest != nil {
-		colour := nearest.Mat.GetColour()
 		if bounces == MaxBounces-1 {
-			return colour
+			return nearest.Mat.SurfaceColour
 		}
 
-		nextray := nearest.Mat.NextRay(ray, nearest.Normal(), hitPos)
-		nextcolour := RayCast(nextray, triangles, bounces+1, hitI)
+		var diffuse Colour
+		var metallic Colour
+		if nearest.Mat.Diffuse > Epsilon {
+			diffuse = DiffuseRay(ray, nearest.Normal(), hitPos).RayCast(triangles, bounces+1, hitI)
+		}
+		if nearest.Mat.Metallic > Epsilon {
+			metallic = MetallicRay(ray, nearest.Normal(), hitPos).RayCast(triangles, bounces+1, hitI)
+		}
 
-		return colour.Mul(nextcolour)
+		return nearest.Mat.CalculateColour(diffuse, metallic)
 	} else {
 		mag := (ray.Dir.Dot(Vec3{Z: 1}) + 0.5)
 		if mag > 0 {
@@ -121,34 +127,54 @@ func Render(tex *Texture) {
 
 	triangles := []Triangle{
 		{
-			P1:  NewVec3(-100, 100, 0),
-			P2:  NewVec3(100, -100, 0),
-			P3:  NewVec3(100, 100, 0),
-			Mat: Material{SurfaceColour: NewColour(0.3, 0.3, 0.3)},
+			P1: NewVec3(-100, 100, 0),
+			P2: NewVec3(100, -100, 0),
+			P3: NewVec3(100, 100, 0),
+			Mat: Material{
+				SurfaceColour: NewColour(0.3, 0.3, 0.3),
+				Diffuse:       1.0,
+				Metallic:      1.0,
+			},
 		},
 		{
-			P1:  NewVec3(-100, 100, 0),
-			P2:  NewVec3(-100, -100, 0),
-			P3:  NewVec3(100, -100, 0),
-			Mat: Material{SurfaceColour: NewColour(0.3, 0.3, 0.3)},
+			P1: NewVec3(-100, 100, 0),
+			P2: NewVec3(-100, -100, 0),
+			P3: NewVec3(100, -100, 0),
+			Mat: Material{
+				SurfaceColour: NewColour(0.3, 0.3, 0.3),
+				Diffuse:       1.0,
+				Metallic:      1.0,
+			},
 		},
 		{
-			P1:  NewVec3(-1, 3, 0),
-			P2:  NewVec3(1, 3, 0),
-			P3:  NewVec3(0, 2, 1),
-			Mat: Material{SurfaceColour: NewColour(0.0, 0.8, 0.6)},
+			P1: NewVec3(-1, 3, 0),
+			P2: NewVec3(1, 3, 0),
+			P3: NewVec3(0, 2, 1),
+			Mat: Material{
+				SurfaceColour: NewColour(0.0, 0.8, 0.6),
+				Diffuse:       1.0,
+				Metallic:      1.0,
+			},
 		},
 		{
-			P1:  NewVec3(-0.5, 4, 0.5),
-			P2:  NewVec3(1.5, 4, 0.5),
-			P3:  NewVec3(0.5, 3.8, 1.5),
-			Mat: Material{SurfaceColour: NewColour(0.1, 0.5, 0.5)},
+			P1: NewVec3(-0.5, 4, 0.5),
+			P2: NewVec3(1.5, 4, 0.5),
+			P3: NewVec3(0.5, 3.8, 1.5),
+			Mat: Material{
+				SurfaceColour: NewColour(0.0, 0.0, 0.0),
+				Diffuse:       0.0,
+				Metallic:      1.0,
+			},
 		},
 		{
-			P1:  NewVec3(-2, 4, 0),
-			P2:  NewVec3(-2, 7, 5),
-			P3:  NewVec3(-5, 7, 5),
-			Mat: Material{SurfaceColour: NewColour(1.0, 1.0, 0.9)},
+			P1: NewVec3(-2, 4, 0),
+			P2: NewVec3(-2, 7, 5),
+			P3: NewVec3(-5, 7, 5),
+			Mat: Material{
+				SurfaceColour: NewColour(0.1, 0.5, 0.5),
+				Diffuse:       1.0,
+				Metallic:      0.0,
+			},
 		},
 	}
 	// t += 3.1415 / 60.0
@@ -166,7 +192,7 @@ func Render(tex *Texture) {
 					Dir: RayDir(50, x, y, tex.Width, tex.Height),
 				}
 
-				colour := RayCast(ray, &triangles, 0, -1)
+				colour := ray.RayCast(&triangles, 0, -1)
 
 				FrameBuf[y][x] = FrameBuf[y][x].Add(colour)
 
