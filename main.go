@@ -2,10 +2,12 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"runtime/pprof"
 	"time"
 
+	"github.com/hschendel/stl"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
@@ -14,6 +16,55 @@ func main() {
 	pprof.StartCPUProfile(f)
 	defer pprof.StopCPUProfile()
 
+	model, _ := stl.ReadFile("LowPolyAnimal.stl")
+	model.ScaleLinearDowntoSizeBox(stl.Vec3{10, 10, 10})
+	model.Scale(3)
+	model.Rotate(stl.Vec3{0, 0, 0}, stl.Vec3{1, 0, 0}, math.Pi/2)
+	model.Rotate(stl.Vec3{0, 0, 0}, stl.Vec3{0, 0, 1}, math.Pi/4)
+	min := model.Measure().Min
+	model.Translate(stl.Vec3{-2, 10, -min[2]})
+
+	triangles := make([]Triangle, 1)
+	for _, tri := range model.Triangles {
+		triangles = append(triangles,
+			Triangle{
+				P1: NewVec3(float64(tri.Vertices[0][0]), float64(tri.Vertices[0][1]), float64(tri.Vertices[0][2])),
+				P2: NewVec3(float64(tri.Vertices[1][0]), float64(tri.Vertices[1][1]), float64(tri.Vertices[1][2])),
+				P3: NewVec3(float64(tri.Vertices[2][0]), float64(tri.Vertices[2][1]), float64(tri.Vertices[2][2])),
+				Mat: Material{
+					SurfaceColour: NewColour(0.1, 0.5, 0.5),
+					Diffuse:       1.0,
+					Metallic:      0.2,
+				},
+			},
+		)
+	}
+
+	//Ground plane
+	triangles = append(triangles, []Triangle{
+		{
+			P1: NewVec3(-100, 100, 0),
+			P2: NewVec3(100, -100, 0),
+			P3: NewVec3(100, 100, 0),
+			Mat: Material{
+				SurfaceColour: NewColour(0.3, 0.3, 0.3),
+				Diffuse:       1.0,
+				Metallic:      1.0,
+			},
+		},
+		{
+			P1: NewVec3(-100, 100, 0),
+			P2: NewVec3(-100, -100, 0),
+			P3: NewVec3(100, -100, 0),
+			Mat: Material{
+				SurfaceColour: NewColour(0.3, 0.3, 0.3),
+				Diffuse:       1.0,
+				Metallic:      1.0,
+			},
+		},
+	}...)
+
+	//Create Window
 	const (
 		windowWidth  = 800
 		windowHeight = 600
@@ -49,7 +100,7 @@ func main() {
 		// renderer.SetDrawColor(0, 0, 0, 0x20)
 		// renderer.FillRect(nil)
 
-		Render(&tex)
+		Render(&tex, triangles)
 
 		tex.Update()
 

@@ -129,62 +129,9 @@ func (ray Ray) RayCast(triangles *[]Triangle, bounces int, lastTri int) Colour {
 var NumSamples int
 var FrameBuf [600][800]Colour
 
-func Render(tex *Texture) {
+func Render(tex *Texture, triangles []Triangle) {
 
-	triangles := []Triangle{
-		{
-			P1: NewVec3(-100, 100, 0),
-			P2: NewVec3(100, -100, 0),
-			P3: NewVec3(100, 100, 0),
-			Mat: Material{
-				SurfaceColour: NewColour(0.3, 0.3, 0.3),
-				Diffuse:       1.0,
-				Metallic:      1.0,
-			},
-		},
-		{
-			P1: NewVec3(-100, 100, 0),
-			P2: NewVec3(-100, -100, 0),
-			P3: NewVec3(100, -100, 0),
-			Mat: Material{
-				SurfaceColour: NewColour(0.3, 0.3, 0.3),
-				Diffuse:       1.0,
-				Metallic:      1.0,
-			},
-		},
-		{
-			P1: NewVec3(-1, 3, 0),
-			P2: NewVec3(1, 3, 0),
-			P3: NewVec3(0, 2, 1),
-			Mat: Material{
-				SurfaceColour: NewColour(0.0, 0.8, 0.6),
-				Diffuse:       1.0,
-				Metallic:      1.0,
-			},
-		},
-		{
-			P1: NewVec3(-0.5, 4, 0.5),
-			P2: NewVec3(1.5, 4, 0.5),
-			P3: NewVec3(0.5, 3.8, 1.5),
-			Mat: Material{
-				SurfaceColour: NewColour(0.0, 0.0, 0.0),
-				Diffuse:       0.0,
-				Metallic:      1.0,
-			},
-		},
-		{
-			P1: NewVec3(-2, 4, 0),
-			P2: NewVec3(-2, 7, 5),
-			P3: NewVec3(-5, 7, 5),
-			Mat: Material{
-				SurfaceColour: NewColour(0.1, 0.5, 0.5),
-				Diffuse:       1.0,
-				Metallic:      0.0,
-			},
-		},
-	}
-
-	camPos := Vec3{X: 0, Y: -4, Z: 2}
+	camPos := Vec3{X: 0, Y: -5, Z: 4}
 	NumSamples++
 
 	wait := sync.WaitGroup{}
