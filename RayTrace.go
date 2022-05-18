@@ -114,6 +114,9 @@ func RayCast(ray Ray, triangles *[]Triangle, bounces int, lastTri int) float64 {
 
 var t float64
 
+var NumSamples int
+var FrameBuf [600][800]float64
+
 func Render(tex *Texture) {
 
 	triangles := []Triangle{
@@ -148,9 +151,10 @@ func Render(tex *Texture) {
 			Mat: Material{Colour: 1},
 		},
 	}
-	t += 3.1415 / 60.0
+	// t += 3.1415 / 60.0
 
-	camPos := Vec3{X: 2 * math.Sin(t), Y: 2*math.Cos(t) - 4, Z: 2}
+	camPos := Vec3{X: 0, Y: -4, Z: 2}
+	NumSamples++
 
 	wait := sync.WaitGroup{}
 	for y := 0; y < tex.Height; y++ {
@@ -164,7 +168,9 @@ func Render(tex *Texture) {
 
 				colour := RayCast(ray, &triangles, 0, -1)
 
-				rgb := uint8(math.Max(math.Min(255*colour, 255), 0))
+				FrameBuf[y][x] += colour
+
+				rgb := uint8(math.Max(math.Min(255*FrameBuf[y][x]/float64(NumSamples), 255), 0))
 				tex.Set(x, y, Pixel{
 					Red:   rgb,
 					Green: rgb,
