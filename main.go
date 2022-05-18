@@ -27,41 +27,41 @@ func main() {
 	triangles := make([]Triangle, 1)
 	for _, tri := range model.Triangles {
 		triangles = append(triangles,
-			Triangle{
-				P1: NewVec3(float64(tri.Vertices[0][0]), float64(tri.Vertices[0][1]), float64(tri.Vertices[0][2])),
-				P2: NewVec3(float64(tri.Vertices[1][0]), float64(tri.Vertices[1][1]), float64(tri.Vertices[1][2])),
-				P3: NewVec3(float64(tri.Vertices[2][0]), float64(tri.Vertices[2][1]), float64(tri.Vertices[2][2])),
-				Mat: Material{
+			NewTriangle(
+				NewVec3(float64(tri.Vertices[0][0]), float64(tri.Vertices[0][1]), float64(tri.Vertices[0][2])),
+				NewVec3(float64(tri.Vertices[1][0]), float64(tri.Vertices[1][1]), float64(tri.Vertices[1][2])),
+				NewVec3(float64(tri.Vertices[2][0]), float64(tri.Vertices[2][1]), float64(tri.Vertices[2][2])),
+				Material{
 					SurfaceColour: NewColour(0.1, 0.5, 0.5),
 					Diffuse:       1.0,
 					Metallic:      0.2,
 				},
-			},
+			),
 		)
 	}
 
 	//Ground plane
 	triangles = append(triangles, []Triangle{
-		{
-			P1: NewVec3(-100, 100, 0),
-			P2: NewVec3(100, -100, 0),
-			P3: NewVec3(100, 100, 0),
-			Mat: Material{
+		NewTriangle(
+			NewVec3(-100, 100, 0),
+			NewVec3(100, -100, 0),
+			NewVec3(100, 100, 0),
+			Material{
 				SurfaceColour: NewColour(0.3, 0.3, 0.3),
 				Diffuse:       1.0,
 				Metallic:      1.0,
 			},
-		},
-		{
-			P1: NewVec3(-100, 100, 0),
-			P2: NewVec3(-100, -100, 0),
-			P3: NewVec3(100, -100, 0),
-			Mat: Material{
+		),
+		NewTriangle(
+			NewVec3(-100, 100, 0),
+			NewVec3(-100, -100, 0),
+			NewVec3(100, -100, 0),
+			Material{
 				SurfaceColour: NewColour(0.3, 0.3, 0.3),
 				Diffuse:       1.0,
 				Metallic:      1.0,
 			},
-		},
+		),
 	}...)
 
 	//Create Window

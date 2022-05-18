@@ -24,35 +24,50 @@ type Triangle struct {
 	P3 Vec3
 
 	Mat Material
+
+	Edge1  Vec3
+	Edge2  Vec3
+	Cross  Vec3 //Normal
+	Normal Vec3 //Normalized Normal
+}
+
+func NewTriangle(p1 Vec3, p2 Vec3, p3 Vec3, mat Material) Triangle {
+	tri := Triangle{
+		P1:  p1,
+		P2:  p2,
+		P3:  p3,
+		Mat: mat,
+	}
+
+	tri.Edge1 = p2.Sub(p1)
+	tri.Edge2 = p3.Sub(p1)
+	tri.Cross = tri.Edge1.Cross(tri.Edge2)
+	tri.Normal = tri.Cross.Normalize()
+	return tri
 }
 
 //https://stackoverflow.com/questions/42740765/intersection-between-line-and-triangle-in-3d
 //https://en.wikipedia.org/wiki/Möller–Trumbore_intersection_algorithm
 //Intersect returns intersection and the barycentric coords
 func (ray *Ray) Intersect(tri *Triangle) (bool, Vec3, Vec3) {
-	edge1 := tri.P2.Sub(tri.P1)
-	edge2 := tri.P3.Sub(tri.P1)
-	n := edge1.Cross(edge2)
-	det := -ray.Dir.Dot(n)
+	det := -ray.Dir.Dot(tri.Cross)
+	//Backface culling
+	if det < 0 {
+		return false, Vec3{}, Vec3{}
+	}
 	invDet := 1.0 / det
 	a0 := ray.Pos.Sub(tri.P1)
 	da0 := a0.Cross(ray.Dir)
 
-	u := edge2.Dot(da0) * invDet
-	v := -edge1.Dot(da0) * invDet
-	t := a0.Dot(n) * invDet
+	u := tri.Edge2.Dot(da0) * invDet
+	v := -tri.Edge1.Dot(da0) * invDet
+	t := a0.Dot(tri.Cross) * invDet
 
-	intersect := det >= Epsilon && t >= 0.0 && u >= 0.0 && v >= 0.0 && (u+v) <= 1.0
+	intersect := t >= 0.0 && u >= 0.0 && v >= 0.0 && (u+v) <= 1.0
 
 	intersection := ray.Pos.Add(ray.Dir.MulScalar(t))
 	barry := Vec3{X: u, Y: v, Z: 1.0 - u - v}
 	return intersect, intersection, barry
-}
-
-func (tri *Triangle) Normal() Vec3 {
-	edge1 := tri.P2.Sub(tri.P1)
-	edge2 := tri.P3.Sub(tri.P1)
-	return edge1.Cross(edge2).Normalize()
 }
 
 func ToRadians(degrees float64) float64 {
@@ -107,11 +122,11 @@ func (ray Ray) RayCast(triangles *[]Triangle, bounces int, lastTri int) Colour {
 		var metallic Colour
 		//Diffuse
 		if nearest.Mat.Diffuse > Epsilon {
-			diffuse = DiffuseRay(ray, nearest.Normal(), hitPos).RayCast(triangles, bounces+1, hitI)
+			diffuse = DiffuseRay(ray, nearest.Normal, hitPos).RayCast(triangles, bounces+1, hitI)
 		}
 		//Metallic
 		if nearest.Mat.Metallic > Epsilon {
-			metallic = MetallicRay(ray, nearest.Normal(), hitPos).RayCast(triangles, bounces+1, hitI)
+			metallic = MetallicRay(ray, nearest.Normal, hitPos).RayCast(triangles, bounces+1, hitI)
 		}
 
 		//Calculate the colour based on the material
