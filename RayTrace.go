@@ -24,7 +24,6 @@ type Triangle struct {
 	P3 Vec3
 
 	Mat Material
-	Col Colour
 }
 
 //https://stackoverflow.com/questions/42740765/intersection-between-line-and-triangle-in-3d
@@ -78,6 +77,7 @@ func (ray Ray) RayCast(triangles *[]Triangle, bounces int, lastTri int) Colour {
 
 	//Find nearest triangle
 	for i, tri := range *triangles {
+		//Bypass the triangle we've already intersected with
 		if i == lastTri {
 			continue
 		}
@@ -85,6 +85,7 @@ func (ray Ray) RayCast(triangles *[]Triangle, bounces int, lastTri int) Colour {
 
 		if intersect {
 			dist := ray.Pos.Distance(hitpos)
+			//Check if nearest
 			if dist < depth {
 				nearest = &(*triangles)[i]
 				depth = dist
@@ -95,21 +96,28 @@ func (ray Ray) RayCast(triangles *[]Triangle, bounces int, lastTri int) Colour {
 	}
 
 	if nearest != nil {
+		//At max bounces
 		if bounces == MaxBounces-1 {
+			//Just surface colour
 			return nearest.Mat.SurfaceColour
 		}
 
+		//Recursive RayCast for each type of ray
 		var diffuse Colour
 		var metallic Colour
+		//Diffuse
 		if nearest.Mat.Diffuse > Epsilon {
 			diffuse = DiffuseRay(ray, nearest.Normal(), hitPos).RayCast(triangles, bounces+1, hitI)
 		}
+		//Metallic
 		if nearest.Mat.Metallic > Epsilon {
 			metallic = MetallicRay(ray, nearest.Normal(), hitPos).RayCast(triangles, bounces+1, hitI)
 		}
 
+		//Calculate the colour based on the material
 		return nearest.Mat.CalculateColour(diffuse, metallic)
 	} else {
+		//sky light calculation
 		mag := (ray.Dir.Dot(Vec3{Z: 1}) + 0.5)
 		if mag > 0 {
 			return NewColour(mag, mag, mag)
@@ -117,8 +125,6 @@ func (ray Ray) RayCast(triangles *[]Triangle, bounces int, lastTri int) Colour {
 		return NewColour(0, 0, 0)
 	}
 }
-
-var t float64
 
 var NumSamples int
 var FrameBuf [600][800]Colour
@@ -177,7 +183,6 @@ func Render(tex *Texture) {
 			},
 		},
 	}
-	// t += 3.1415 / 60.0
 
 	camPos := Vec3{X: 0, Y: -4, Z: 2}
 	NumSamples++
@@ -187,17 +192,20 @@ func Render(tex *Texture) {
 		wait.Add(1)
 		go func(y int) {
 			for x := 0; x < tex.Width; x++ {
+				//Generate Ray
 				ray := Ray{
 					Pos: camPos,
 					Dir: RayDir(50, x, y, tex.Width, tex.Height),
 				}
 
+				//Start Raytracing
 				colour := ray.RayCast(&triangles, 0, -1)
 
+				//'Accumulate light' and average
 				FrameBuf[y][x] = FrameBuf[y][x].Add(colour)
-
 				avg := FrameBuf[y][x].DivScalar(float64(NumSamples))
 
+				//Map to texture
 				r := uint8(math.Max(math.Min(255*avg.R, 255), 0))
 				g := uint8(math.Max(math.Min(255*avg.G, 255), 0))
 				b := uint8(math.Max(math.Min(255*avg.B, 255), 0))

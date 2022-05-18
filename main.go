@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"os"
 	"runtime/pprof"
@@ -11,7 +10,6 @@ import (
 )
 
 func main() {
-	flag.Parse()
 	f, _ := os.Create("ray.prof")
 	pprof.StartCPUProfile(f)
 	defer pprof.StopCPUProfile()
