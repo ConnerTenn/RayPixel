@@ -69,7 +69,7 @@ func RayDir(fov float64, x int, y int, width int, height int) Vec3 {
 	return NewVec3(xz.X, ypart, -xz.Y).Normalize()
 }
 
-func RayCast(ray Ray, triangles *[]Triangle, bounces int, lastTri int) float64 {
+func RayCast(ray Ray, triangles *[]Triangle, bounces int, lastTri int) Colour {
 	var nearest *Triangle = nil
 	var hitPos Vec3
 	hitI := -1
@@ -102,20 +102,20 @@ func RayCast(ray Ray, triangles *[]Triangle, bounces int, lastTri int) float64 {
 		nextray := nearest.Mat.NextRay(ray, nearest.Normal(), hitPos)
 		nextcolour := RayCast(nextray, triangles, bounces+1, hitI)
 
-		return colour * nextcolour
+		return colour.Mul(nextcolour)
 	} else {
 		mag := (ray.Dir.Dot(Vec3{Z: 1}) + 0.5)
 		if mag > 0 {
-			return mag
+			return NewColour(mag, mag, mag)
 		}
-		return 0
+		return NewColour(0, 0, 0)
 	}
 }
 
 var t float64
 
 var NumSamples int
-var FrameBuf [600][800]float64
+var FrameBuf [600][800]Colour
 
 func Render(tex *Texture) {
 
@@ -124,31 +124,31 @@ func Render(tex *Texture) {
 			P1:  NewVec3(-100, 100, 0),
 			P2:  NewVec3(100, -100, 0),
 			P3:  NewVec3(100, 100, 0),
-			Mat: Material{Colour: 0.5},
+			Mat: Material{SurfaceColour: NewColour(0.3, 0.3, 0.3)},
 		},
 		{
 			P1:  NewVec3(-100, 100, 0),
 			P2:  NewVec3(-100, -100, 0),
 			P3:  NewVec3(100, -100, 0),
-			Mat: Material{Colour: 0.5},
+			Mat: Material{SurfaceColour: NewColour(0.3, 0.3, 0.3)},
 		},
 		{
 			P1:  NewVec3(-1, 3, 0),
 			P2:  NewVec3(1, 3, 0),
 			P3:  NewVec3(0, 2, 1),
-			Mat: Material{Colour: 0.8},
+			Mat: Material{SurfaceColour: NewColour(0.0, 0.8, 0.6)},
 		},
 		{
 			P1:  NewVec3(-0.5, 4, 0.5),
 			P2:  NewVec3(1.5, 4, 0.5),
 			P3:  NewVec3(0.5, 3.8, 1.5),
-			Mat: Material{Colour: 0.5},
+			Mat: Material{SurfaceColour: NewColour(0.1, 0.5, 0.5)},
 		},
 		{
 			P1:  NewVec3(-2, 4, 0),
 			P2:  NewVec3(-2, 7, 5),
 			P3:  NewVec3(-5, 7, 5),
-			Mat: Material{Colour: 1},
+			Mat: Material{SurfaceColour: NewColour(1.0, 1.0, 0.9)},
 		},
 	}
 	// t += 3.1415 / 60.0
@@ -168,13 +168,17 @@ func Render(tex *Texture) {
 
 				colour := RayCast(ray, &triangles, 0, -1)
 
-				FrameBuf[y][x] += colour
+				FrameBuf[y][x] = FrameBuf[y][x].Add(colour)
 
-				rgb := uint8(math.Max(math.Min(255*FrameBuf[y][x]/float64(NumSamples), 255), 0))
+				avg := FrameBuf[y][x].DivScalar(float64(NumSamples))
+
+				r := uint8(math.Max(math.Min(255*avg.R, 255), 0))
+				g := uint8(math.Max(math.Min(255*avg.G, 255), 0))
+				b := uint8(math.Max(math.Min(255*avg.B, 255), 0))
 				tex.Set(x, y, Pixel{
-					Red:   rgb,
-					Green: rgb,
-					Blue:  rgb,
+					R: r,
+					G: g,
+					B: b,
 				})
 			}
 			wait.Done()

@@ -7,10 +7,10 @@ import (
 )
 
 type Pixel struct {
-	Blue  uint8
-	Green uint8
-	Red   uint8
-	_     uint8 //Padding
+	B uint8
+	G uint8
+	R uint8
+	_ uint8 //Padding
 }
 
 type Texture struct {
@@ -47,4 +47,17 @@ func (tex *Texture) Update() {
 
 func (tex *Texture) Destroy() {
 	tex.SdlTex.Destroy()
+}
+
+func IntMax(a int, b int) int {
+	if a >= b {
+		return a
+	}
+	return b
+}
+func IntMin(a int, b int) int {
+	if a <= b {
+		return a
+	}
+	return b
 }
