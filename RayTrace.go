@@ -25,6 +25,7 @@ type Line struct {
 	P2 *v3.Vector3
 }
 
+//Counter clockwise for normal facing camera
 type Triangle struct {
 	P1 *v3.Vector3
 	P2 *v3.Vector3
@@ -50,7 +51,7 @@ func (ray *Ray) Intersect(tri *Triangle) (bool, v3.Vector3, v3.Vector3) {
 	v := -edge1.Dot(da0) * invDet
 	t := a0.Dot(n) * invDet
 
-	intersect := math.Abs(det) >= Epsilon && t >= 0.0 && u >= 0.0 && v >= 0.0 && (u+v) <= 1.0
+	intersect := det >= Epsilon && t >= 0.0 && u >= 0.0 && v >= 0.0 && (u+v) <= 1.0
 
 	intersection := *ray.Pos.Add(ray.Dir.MulScalar(t))
 	barry := v3.Vector3{X: u, Y: v, Z: 1.0 - u - v}
@@ -165,8 +166,8 @@ func Render(tex *Texture) {
 		},
 		{
 			P1:  v3.New(-100, 100, 0),
-			P2:  v3.New(100, -100, 0),
-			P3:  v3.New(-100, -100, 0),
+			P2:  v3.New(-100, -100, 0),
+			P3:  v3.New(100, -100, 0),
 			Mat: Material{Colour: 0.5},
 		},
 		{
