@@ -2,8 +2,6 @@ package main
 
 import (
 	"math"
-
-	v3 "github.com/deeean/go-vector/vector3"
 )
 
 type Material struct {
@@ -25,14 +23,14 @@ func FastRandF() float64 {
 }
 
 //https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-overview/light-transport-ray-tracing-whitted
-func (mat Material) NextRay(incoming Ray, normal *v3.Vector3, collide *v3.Vector3) Ray {
+func (mat Material) NextRay(incoming Ray, normal Vec3, collide Vec3) Ray {
 
-	diffuseDir := RotateV3(PerpendicularV3(normal).Lerp(normal, FastRandF()), normal, FastRandF()*math.Pi*2.0)
+	diffuseDir := normal.Perpendicular().Lerp(normal, FastRandF()).Rotate(normal, FastRandF()*math.Pi*2.0)
 	// diffuseDir := v3.New(FastRandF()*2-1, FastRandF()*2-1, FastRandF()*2-1).Normalize()
 	// if diffuseDir.Dot(normal) < 0 {
 	// 	diffuseDir = diffuseDir.MulScalar(-1)
 	// }
-	// diffuseDir := ReflectV3(incoming.Dir, normal).Normalize()
+	// diffuseDir := incoming.Dir.Reflect(normal).Normalize()
 
 	return Ray{
 		Pos: collide,
