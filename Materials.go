@@ -65,14 +65,14 @@ func (mat Material) CalculateColour(diffuse Colour, metallic Colour) Colour {
 	return colour
 }
 
-var rseed uint
+var rseed uint32
 
 //https://stackoverflow.com/questions/26237419/faster-than-rand
 //Range [0,1)
 func FastRandF() float64 {
-	// return float64(time.Now().UnixNano()%1000) / 1000.0
 	rseed = 214013*rseed + 2531011
-	return float64((rseed>>16)&0x7FFF) / 32767.0
+	// return float64((rseed>>16)&0x7FFF) / 32767.0
+	return float64(rseed>>16) / 65536.0
 }
 
 //https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-overview/light-transport-ray-tracing-whitted
