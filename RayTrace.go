@@ -150,13 +150,15 @@ func Render(tex *Texture) {
 	}
 	t += 3.1415 / 60.0
 
+	camPos := Vec3{X: 2 * math.Sin(t), Y: 2*math.Cos(t) - 4, Z: 2}
+
 	wait := sync.WaitGroup{}
 	for y := 0; y < tex.Height; y++ {
 		wait.Add(1)
 		go func(y int) {
 			for x := 0; x < tex.Width; x++ {
 				ray := Ray{
-					Pos: Vec3{X: 2 * math.Sin(t), Y: 2*math.Cos(t) - 4, Z: 2},
+					Pos: camPos,
 					Dir: RayDir(50, x, y, tex.Width, tex.Height),
 				}
 

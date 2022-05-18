@@ -18,8 +18,7 @@ var rseed uint
 func FastRandF() float64 {
 	// return float64(time.Now().UnixNano()%1000) / 1000.0
 	rseed = 214013*rseed + 2531011
-	r := (rseed >> 16) & 0x7FFF
-	return float64(r) / 32767
+	return float64((rseed>>16)&0x7FFF) / 32767.0
 }
 
 //https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-overview/light-transport-ray-tracing-whitted
