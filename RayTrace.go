@@ -15,6 +15,7 @@ type Ray struct {
 	Pos *v3.Vector3
 	Dir *v3.Vector3
 
+	LastHit *Triangle
 	Colour  *v3.Vector3
 	Bounces int
 }
@@ -111,29 +112,34 @@ func RayDir(fov float64, x int, y int, width int, height int) *v3.Vector3 {
 }
 
 func RayCast(ray Ray, triangles *[]Triangle) float64 {
-	var intersected *Triangle = nil
-	var iPos *v3.Vector3
+	var nearest *Triangle = nil
+	var hitPos *v3.Vector3 = nil
 	depth := math.MaxFloat64
+
 	for i, tri := range *triangles {
-		intersect, ipos, _ := ray.Intersect(&tri)
+		if &(*triangles)[i] == ray.LastHit {
+			continue
+		}
+		intersect, hitpos, _ := ray.Intersect(&tri)
 
 		if intersect {
-			dist := ray.Pos.Distance(&ipos)
+			dist := ray.Pos.Distance(&hitpos)
 			if dist < depth {
-				intersected = &(*triangles)[i]
+				nearest = &(*triangles)[i]
 				depth = dist
-				iPos = ipos.Copy()
+				hitPos = hitpos.Copy()
 			}
 		}
 	}
 
-	if intersected != nil {
-		colour := intersected.Mat.GetColour()
+	if nearest != nil {
+		colour := nearest.Mat.GetColour()
 		if ray.Bounces == MaxBounces-1 {
 			return colour
 		}
 
-		nextray := intersected.Mat.NextRay(ray, intersected.Normal(), iPos)
+		nextray := nearest.Mat.NextRay(ray, nearest.Normal(), hitPos)
+		nextray.LastHit = nearest
 		nextcolour := RayCast(nextray, triangles)
 
 		return colour * nextcolour
