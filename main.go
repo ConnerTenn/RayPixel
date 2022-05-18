@@ -108,7 +108,7 @@ func main() {
 
 		select {
 		case <-ticker.C:
-			fmt.Print("\rFrameRate:", int(1.0/dt.Seconds()), "      ")
+			fmt.Print("\rFrameRate:", int(1.0/dt.Seconds()), "  FrameTime:", int(dt.Milliseconds()), "ms      ")
 		default:
 		}
 	}

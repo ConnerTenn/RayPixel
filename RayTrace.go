@@ -64,10 +64,13 @@ func (ray *Ray) Intersect(tri *Triangle) (bool, Vec3, Vec3) {
 	t := a0.Dot(tri.Cross) * invDet
 
 	intersect := t >= 0.0 && u >= 0.0 && v >= 0.0 && (u+v) <= 1.0
+	if !intersect {
+		return false, Vec3{}, Vec3{}
+	}
 
 	intersection := ray.Pos.Add(ray.Dir.MulScalar(t))
 	barry := Vec3{X: u, Y: v, Z: 1.0 - u - v}
-	return intersect, intersection, barry
+	return true, intersection, barry
 }
 
 func ToRadians(degrees float64) float64 {
@@ -91,12 +94,12 @@ func (ray Ray) RayCast(triangles *[]Triangle, bounces int, lastTri int) Colour {
 	depth := math.MaxFloat64
 
 	//Find nearest triangle
-	for i, tri := range *triangles {
+	for i := range *triangles {
 		//Bypass the triangle we've already intersected with
 		if i == lastTri {
 			continue
 		}
-		intersect, hitpos, _ := ray.Intersect(&tri)
+		intersect, hitpos, _ := ray.Intersect(&(*triangles)[i])
 
 		if intersect {
 			dist := ray.Pos.Distance(hitpos)
