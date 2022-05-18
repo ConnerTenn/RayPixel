@@ -14,10 +14,6 @@ const MaxBounces int = 3
 type Ray struct {
 	Pos *v3.Vector3
 	Dir *v3.Vector3
-
-	LastHit *Triangle
-	Colour  *v3.Vector3
-	Bounces int
 }
 
 type Line struct {
@@ -31,8 +27,7 @@ type Triangle struct {
 	P2 *v3.Vector3
 	P3 *v3.Vector3
 
-	Mat       Material
-	TotalDist float64
+	Mat Material
 }
 
 //https://stackoverflow.com/questions/42740765/intersection-between-line-and-triangle-in-3d
@@ -112,13 +107,15 @@ func RayDir(fov float64, x int, y int, width int, height int) *v3.Vector3 {
 	return v3.New(xz.X, ypart, -xz.Y).Normalize()
 }
 
-func RayCast(ray Ray, triangles *[]Triangle) float64 {
+func RayCast(ray Ray, triangles *[]Triangle, bounces int, lastTri int) float64 {
 	var nearest *Triangle = nil
-	var hitPos *v3.Vector3 = nil
+	var hitPos v3.Vector3
+	hitI := -1
 	depth := math.MaxFloat64
 
+	//Find nearest triangle
 	for i, tri := range *triangles {
-		if &(*triangles)[i] == ray.LastHit {
+		if i == lastTri {
 			continue
 		}
 		intersect, hitpos, _ := ray.Intersect(&tri)
@@ -128,20 +125,20 @@ func RayCast(ray Ray, triangles *[]Triangle) float64 {
 			if dist < depth {
 				nearest = &(*triangles)[i]
 				depth = dist
-				hitPos = hitpos.Copy()
+				hitPos = hitpos
+				hitI = i
 			}
 		}
 	}
 
 	if nearest != nil {
 		colour := nearest.Mat.GetColour()
-		if ray.Bounces == MaxBounces-1 {
+		if bounces == MaxBounces-1 {
 			return colour
 		}
 
-		nextray := nearest.Mat.NextRay(ray, nearest.Normal(), hitPos)
-		nextray.LastHit = nearest
-		nextcolour := RayCast(nextray, triangles)
+		nextray := nearest.Mat.NextRay(ray, nearest.Normal(), &hitPos)
+		nextcolour := RayCast(nextray, triangles, bounces+1, hitI)
 
 		return colour * nextcolour
 	} else {
@@ -201,7 +198,7 @@ func Render(tex *Texture) {
 					Dir: RayDir(50, x, y, tex.Width, tex.Height),
 				}
 
-				colour := RayCast(ray, &triangles)
+				colour := RayCast(ray, &triangles, 0, -1)
 
 				rgb := uint8(math.Max(math.Min(255*colour, 255), 0))
 				tex.Set(x, y, Pixel{

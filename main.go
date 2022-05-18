@@ -1,13 +1,21 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	"os"
+	"runtime/pprof"
 	"time"
 
 	"github.com/veandco/go-sdl2/sdl"
 )
 
 func main() {
+	flag.Parse()
+	f, _ := os.Create("ray.prof")
+	pprof.StartCPUProfile(f)
+	defer pprof.StopCPUProfile()
+
 	const (
 		windowWidth  = 800
 		windowHeight = 600
@@ -51,7 +59,7 @@ func main() {
 
 		select {
 		case <-ticker.C:
-			fmt.Print("\rFrameRate:", int(1.0/dt.Seconds()))
+			fmt.Print("\rFrameRate:", int(1.0/dt.Seconds()), "      ")
 		default:
 		}
 	}

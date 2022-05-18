@@ -37,7 +37,5 @@ func (mat Material) NextRay(incoming Ray, normal *v3.Vector3, collide *v3.Vector
 	return Ray{
 		Pos: collide,
 		Dir: diffuseDir,
-
-		Bounces: incoming.Bounces + 1,
 	}
 }
