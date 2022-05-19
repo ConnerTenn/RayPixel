@@ -39,6 +39,7 @@ func main() {
 					SurfaceColour: NewColour(0.1, 0.5, 0.5),
 					Diffuse:       1.0,
 					Metallic:      0.2,
+					Emissive:      0,
 				},
 			),
 		)
@@ -54,6 +55,7 @@ func main() {
 				SurfaceColour: NewColour(0.3, 0.3, 0.3),
 				Diffuse:       1.0,
 				Metallic:      0.1,
+				Emissive:      0,
 			},
 		),
 		NewTriangle(
@@ -64,6 +66,18 @@ func main() {
 				SurfaceColour: NewColour(0.3, 0.3, 0.3),
 				Diffuse:       1.0,
 				Metallic:      0.1,
+				Emissive:      0,
+			},
+		),
+		NewTriangle(
+			NewVec3(8, 20, 0),
+			NewVec3(8, 0, 0),
+			NewVec3(8, 0, 10),
+			Material{
+				SurfaceColour: NewColour(1, 0.2, 1),
+				Diffuse:       0,
+				Metallic:      0,
+				Emissive:      20,
 			},
 		),
 	}...)

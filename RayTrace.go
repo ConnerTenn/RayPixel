@@ -5,7 +5,7 @@ import (
 	"sync"
 )
 
-const MaxBounces int = 3
+const MaxBounces int = 8
 
 type Ray struct {
 	Pos Vec3
@@ -132,10 +132,11 @@ func (ray Ray) RayCast(triangles *[]Triangle, bounces int, lastTri int) Colour {
 		return nearest.Mat.CalculateColour(diffuse, metallic)
 	} else {
 		//sky light calculation
-		mag := (ray.Dir.Dot(Vec3{Z: 1}) + 0.5)
-		if mag > 0 {
-			return NewColour(mag, mag, mag)
+		sky := (ray.Dir.Dot(Vec3{Z: 1}) + 0.5)
+		if sky > 0 {
+			return NewColour(sky, sky, sky)
 		}
+
 		return NewColour(0, 0, 0)
 	}
 }

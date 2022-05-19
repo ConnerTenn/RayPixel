@@ -1,5 +1,10 @@
 package main
 
+import (
+	"fmt"
+	"math"
+)
+
 type Colour struct {
 	R float64
 	G float64
@@ -46,17 +51,27 @@ type Material struct {
 	SurfaceColour Colour
 	Diffuse       float64
 	Metallic      float64
+	Emissive      float64
 }
 
 //Calculate colour based on light that falls on it
-func (mat Material) CalculateColour(diffuse Colour, metallic Colour) Colour {
+func (mat *Material) CalculateColour(diffuse Colour, metallic Colour) Colour {
 	var colour Colour
 
 	total := mat.Diffuse + mat.Metallic
 
-	colour = mat.SurfaceColour.Mul(diffuse.MulScalar(mat.Diffuse))
+	if mat.Diffuse > Epsilon {
+		colour = mat.SurfaceColour.Mul(diffuse.MulScalar(mat.Diffuse))
+	}
 
-	colour = colour.Add(metallic.MulScalar(mat.Metallic)).DivScalar(total)
+	if mat.Metallic > Epsilon {
+		colour = colour.Add(metallic.MulScalar(mat.Metallic)).DivScalar(total)
+	}
+
+	colour = colour.Add(mat.SurfaceColour.MulScalar(mat.Emissive))
+	if math.IsNaN(colour.R) {
+		fmt.Println(colour)
+	}
 
 	return colour
 }
