@@ -130,7 +130,7 @@ func (vec Vec3) Rotate(axis Vec3, angle float64) Vec3 {
 
 	t1 := vec.MulScalar(cos)
 	t2 := axis.Cross(vec).MulScalar(sin)
-	t3 := axis.MulScalar(axis.Dot(vec) * (1.0 - sin))
+	t3 := axis.MulScalar(axis.Dot(vec) * (1.0 - cos))
 
 	return t1.Add(t2).Add(t3)
 }
