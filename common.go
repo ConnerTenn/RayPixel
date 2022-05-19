@@ -1,10 +1,20 @@
 package main
 
 import (
+	"math"
 	"unsafe"
 
 	"github.com/veandco/go-sdl2/sdl"
 )
+
+const (
+	Pi  = math.Pi
+	Tau = Pi * 2.0
+)
+
+func ToRadians(degrees float64) float64 {
+	return degrees * Tau / 360.0
+}
 
 type Pixel struct {
 	B uint8

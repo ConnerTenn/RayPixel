@@ -1,9 +1,5 @@
 package main
 
-import (
-	"math"
-)
-
 type Colour struct {
 	R float64
 	G float64
@@ -79,7 +75,7 @@ func FastRandF() float64 {
 
 func DiffuseRay(incoming Ray, normal Vec3, collide Vec3) Ray {
 
-	dir := normal.Perpendicular().Lerp(normal, FastRandF()).Rotate(normal, FastRandF()*math.Pi*2.0)
+	dir := normal.Perpendicular().Lerp(normal, FastRandF()).Rotate(normal, FastRandF()*Tau)
 
 	return Ray{
 		Pos: collide,

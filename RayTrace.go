@@ -73,10 +73,6 @@ func (ray *Ray) Intersect(tri *Triangle) (bool, Vec3, Vec3) {
 	return true, intersection, barry
 }
 
-func ToRadians(degrees float64) float64 {
-	return degrees * math.Pi / 180.0
-}
-
 func RayDir(fov float64, x int, y int, width int, height int) Vec3 {
 	size := NewVec2(float64(width), float64(height))
 	xz := NewVec2(float64(x), float64(y)).Sub(size.DivScalar(2.0))
@@ -144,12 +140,42 @@ func (ray Ray) RayCast(triangles *[]Triangle, bounces int, lastTri int) Colour {
 	}
 }
 
+type Camera struct {
+	Position Vec3
+	Rotation Vec3
+}
+
+func (cam *Camera) GetRay(x int, y int) Ray {
+	ray := Ray{
+		Pos: cam.Position,
+		Dir: RayDir(50, x, y, WindowWidth, WindowHeight),
+	}
+
+	ray.Dir = ray.Dir.Rotate(
+		Vec3{X: 0, Y: 1, Z: 0},
+		cam.Rotation.Y,
+	)
+	ray.Dir = ray.Dir.Rotate(
+		Vec3{X: 1, Y: 0, Z: 0},
+		cam.Rotation.X,
+	)
+	ray.Dir = ray.Dir.Rotate(
+		Vec3{X: 0, Y: 0, Z: 1},
+		cam.Rotation.Z,
+	)
+
+	return ray
+}
+
 var NumSamples int
 var FrameBuf [WindowHeight][WindowWidth]Colour
 
 func Render(tex *Texture, triangles []Triangle) {
 
-	camPos := Vec3{X: 0, Y: -8, Z: 4}
+	cam := Camera{
+		Position: Vec3{X: 0, Y: -8, Z: 8},
+		Rotation: Vec3{X: -Tau * 0.04, Y: 0, Z: 0},
+	}
 	NumSamples++
 
 	wait := sync.WaitGroup{}
@@ -158,10 +184,7 @@ func Render(tex *Texture, triangles []Triangle) {
 		go func(y int) {
 			for x := 0; x < tex.Width; x++ {
 				//Generate Ray
-				ray := Ray{
-					Pos: camPos,
-					Dir: RayDir(50, x, y, tex.Width, tex.Height),
-				}
+				ray := cam.GetRay(x, y)
 
 				//Start Raytracing
 				colour := ray.RayCast(&triangles, 0, -1)

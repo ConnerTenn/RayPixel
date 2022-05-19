@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"math"
 	"os"
 	"runtime/pprof"
 	"time"
@@ -24,8 +23,8 @@ func main() {
 	model, _ := stl.ReadFile("LowPolyAnimal.stl")
 	model.ScaleLinearDowntoSizeBox(stl.Vec3{10, 10, 10})
 	model.Scale(3)
-	model.Rotate(stl.Vec3{0, 0, 0}, stl.Vec3{1, 0, 0}, math.Pi/2)
-	model.Rotate(stl.Vec3{0, 0, 0}, stl.Vec3{0, 0, 1}, math.Pi/4)
+	model.Rotate(stl.Vec3{0, 0, 0}, stl.Vec3{1, 0, 0}, Tau/4)
+	model.Rotate(stl.Vec3{0, 0, 0}, stl.Vec3{0, 0, 1}, Tau/8)
 	min := model.Measure().Min
 	model.Translate(stl.Vec3{-2, 10, -min[2]})
 
