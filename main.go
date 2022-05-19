@@ -11,6 +11,11 @@ import (
 	"github.com/veandco/go-sdl2/sdl"
 )
 
+const (
+	WindowWidth  = 800
+	WindowHeight = 600
+)
+
 func main() {
 	f, _ := os.Create("ray.prof")
 	pprof.StartCPUProfile(f)
@@ -65,11 +70,7 @@ func main() {
 	}...)
 
 	//Create Window
-	const (
-		windowWidth  = 800
-		windowHeight = 600
-	)
-	window, _ := sdl.CreateWindow("RayPixel", sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED, windowWidth, windowHeight, sdl.WINDOW_OPENGL)
+	window, _ := sdl.CreateWindow("RayPixel", sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED, WindowWidth, WindowHeight, sdl.WINDOW_OPENGL)
 	defer window.Destroy()
 
 	renderer, _ := sdl.CreateRenderer(window, -1, sdl.RENDERER_ACCELERATED)
@@ -77,7 +78,7 @@ func main() {
 
 	renderer.Clear()
 
-	tex := NewTexture(renderer, windowWidth, windowHeight)
+	tex := NewTexture(renderer, WindowWidth, WindowHeight)
 	defer tex.Destroy()
 
 	ticker := time.NewTicker(100 * time.Millisecond)

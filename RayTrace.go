@@ -145,11 +145,11 @@ func (ray Ray) RayCast(triangles *[]Triangle, bounces int, lastTri int) Colour {
 }
 
 var NumSamples int
-var FrameBuf [600][800]Colour
+var FrameBuf [WindowHeight][WindowWidth]Colour
 
 func Render(tex *Texture, triangles []Triangle) {
 
-	camPos := Vec3{X: 0, Y: -5, Z: 4}
+	camPos := Vec3{X: 0, Y: -8, Z: 4}
 	NumSamples++
 
 	wait := sync.WaitGroup{}
