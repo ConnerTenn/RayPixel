@@ -53,7 +53,7 @@ func main() {
 			Material{
 				SurfaceColour: NewColour(0.3, 0.3, 0.3),
 				Diffuse:       1.0,
-				Metallic:      1.0,
+				Metallic:      0.1,
 			},
 		),
 		NewTriangle(
@@ -63,7 +63,7 @@ func main() {
 			Material{
 				SurfaceColour: NewColour(0.3, 0.3, 0.3),
 				Diffuse:       1.0,
-				Metallic:      1.0,
+				Metallic:      0.1,
 			},
 		),
 	}...)
