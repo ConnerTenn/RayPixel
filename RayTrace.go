@@ -173,7 +173,7 @@ var NumSamples int
 // Define the size of the pixel grid
 const PixelSize int = 8
 
-const AvgDepth int = 10
+const AvgDepth int = 20
 
 var FrameBuf [WindowHeight / PixelSize][WindowWidth / PixelSize][AvgDepth]Colour
 var FrameIdx = 0
@@ -211,11 +211,19 @@ func Render(tex *Texture, triangles []Triangle) {
 
 						//'Accumulate light' and average
 						FrameBuf[yf][xf][FrameIdx] = colour
+
 						avg := Colour{}
+
 						for i := 0; i < AvgDepth; i++ {
 							avg = avg.Add(FrameBuf[yf][xf][(FrameIdx+i)%AvgDepth])
 						}
 						avg = avg.DivScalar(float64(AvgDepth))
+
+						// for i := 0; i < AvgDepth; i++ {
+						// 	factor := math.Pow(2, -float64(i)-1.0)
+						// 	avg = avg.Add(FrameBuf[yf][xf][(FrameIdx+i)%AvgDepth].MulScalar(factor))
+						// }
+
 						// avg := colour
 
 						//Map to texture
@@ -237,5 +245,8 @@ func Render(tex *Texture, triangles []Triangle) {
 	}
 	wait.Wait()
 
-	FrameIdx = (FrameIdx + 1) % AvgDepth
+	if FrameIdx == 0 {
+		FrameIdx = AvgDepth
+	}
+	FrameIdx = FrameIdx - 1
 }

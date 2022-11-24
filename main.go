@@ -137,4 +137,7 @@ func main() {
 		default:
 		}
 	}
+
+	fmt.Println()
+	fmt.Println()
 }
