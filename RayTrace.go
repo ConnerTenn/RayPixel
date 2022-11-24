@@ -120,8 +120,8 @@ func (ray Ray) RayCast(triangles *[]Triangle, bounces int, prevTri int) Colour {
 		_ = distance
 		return nearest.Mat.RayCast(ray, hitPos, nearest.Normal, triangles, bounces+1, hitI)
 	} else {
-		//sky light calculation
-		sky := (ray.Dir.Dot(Vec3{Z: 1}) + 0.5)
+		// sky light calculation
+		sky := (ray.Dir.Dot(Vec3{Z: 1}) + 0.5) * 0.3
 		if sky > 0 {
 			return NewColour(sky, sky, sky)
 		}
@@ -131,14 +131,15 @@ func (ray Ray) RayCast(triangles *[]Triangle, bounces int, prevTri int) Colour {
 }
 func (ray Ray) RayCastMany(triangles *[]Triangle, bounces int, prevTri int) Colour {
 	var colour Colour
-	for i := 0; i < 6; i++ {
+	const numrays = 3
+	for i := 0; i < numrays; i++ {
 		randRay := Vec3{FastRandF()*2 - 1, FastRandF()*2 - 1, FastRandF()*2 - 1}
 		newray := ray
 		newray.Pos = newray.Pos.Add(randRay.MulScalar(0.1))
 		//Raycast
 		colour = colour.Add(newray.RayCast(triangles, bounces, prevTri))
 	}
-	return colour.DivScalar(6)
+	return colour.DivScalar(numrays)
 }
 
 type Camera struct {
@@ -172,7 +173,7 @@ var NumSamples int
 
 // Define the size of the pixel grid
 const (
-	PixelSize  int = 8
+	PixelSize  int = 10
 	GridWidth  int = WindowWidth / PixelSize
 	GridHeight int = WindowHeight / PixelSize
 	AvgDepth   int = 4
