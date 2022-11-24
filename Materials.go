@@ -85,8 +85,6 @@ func MetallicRay(incoming Ray, normal Vec3, collide Vec3) Ray {
 }
 
 func (mat *Material) RayCast(hitRay Ray, hitPos Vec3, normal Vec3, triangles *[]Triangle, bounces int, prevTri int) Colour {
-	// var colour Colour
-
 	var diffuse Colour
 	var metallic Colour
 	var emissive Colour
@@ -94,8 +92,12 @@ func (mat *Material) RayCast(hitRay Ray, hitPos Vec3, normal Vec3, triangles *[]
 	var totalWeight float64 = 0.0
 
 	if mat.Diffuse > Epsilon {
-		ray := DiffuseRay(normal, hitPos)
-		diffuse = ray.RayCast(triangles, bounces, prevTri)
+		const numrays = 1
+		for i := 0; i < numrays; i++ {
+			ray := DiffuseRay(normal, hitPos)
+			diffuse = diffuse.Add(ray.RayCast(triangles, bounces, prevTri))
+		}
+		diffuse = diffuse.DivScalar(numrays)
 
 		diffuse = mat.SurfaceColour.Mul(diffuse).MulScalar(mat.Diffuse)
 		totalWeight += mat.Diffuse
@@ -112,7 +114,7 @@ func (mat *Material) RayCast(hitRay Ray, hitPos Vec3, normal Vec3, triangles *[]
 
 	if mat.Emissive > Epsilon {
 		emissive = mat.SurfaceColour.MulScalar(mat.Emissive)
-		totalWeight += mat.Emissive
+		totalWeight += math.Sqrt(mat.Emissive)
 	}
 
 	return diffuse.Add(metallic).Add(emissive).DivScalar(totalWeight)
