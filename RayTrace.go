@@ -173,7 +173,7 @@ var NumSamples int
 // Define the size of the pixel grid
 const PixelSize int = 8
 
-const AvgDepth int = 1
+const AvgDepth int = 10
 
 var FrameBuf [WindowHeight / PixelSize][WindowWidth / PixelSize][AvgDepth]Colour
 var FrameIdx = 0
@@ -191,47 +191,49 @@ func Render(tex *Texture, triangles []Triangle) {
 	NumSamples++
 
 	wait := sync.WaitGroup{}
-	for y := 0; y < tex.Height; y++ {
+	for yy := 0; yy < tex.Height; yy += PixelSize {
 		wait.Add(1)
-		go func(y int) {
-			for x := 0; x < tex.Width; x++ {
-				xf := x / PixelSize
-				yf := y / PixelSize
-				xi := xf * PixelSize
-				yi := yf * PixelSize
-				if x%PixelSize == 0 && y%PixelSize == 0 {
-					vx := float64(x) - float64(tex.Width)/2.0
-					vy := float64(y) - float64(tex.Height)/2.0
-					//Generate Ray
-					ray := cam.GetRay(vx/float64(tex.Height), vy/float64(tex.Height))
+		go func(yy int) {
+			for y := yy; y < yy+PixelSize; y++ {
+				for x := 0; x < tex.Width; x++ {
+					xf := x / PixelSize
+					yf := y / PixelSize
+					xi := xf * PixelSize
+					yi := yf * PixelSize
+					if x%PixelSize == 0 && y%PixelSize == 0 {
+						vx := float64(x) - float64(tex.Width)/2.0
+						vy := float64(y) - float64(tex.Height)/2.0
+						//Generate Ray
+						ray := cam.GetRay(vx/float64(tex.Height), vy/float64(tex.Height))
 
-					//Start Raytracing
-					colour := ray.RayCastMany(&triangles, 0, -1)
+						//Start Raytracing
+						colour := ray.RayCastMany(&triangles, 0, -1)
 
-					//'Accumulate light' and average
-					FrameBuf[yf][xf][FrameIdx] = colour
-					avg := Colour{}
-					for i := 0; i < AvgDepth; i++ {
-						avg = avg.Add(FrameBuf[yf][xf][(FrameIdx+i)%AvgDepth])
+						//'Accumulate light' and average
+						FrameBuf[yf][xf][FrameIdx] = colour
+						avg := Colour{}
+						for i := 0; i < AvgDepth; i++ {
+							avg = avg.Add(FrameBuf[yf][xf][(FrameIdx+i)%AvgDepth])
+						}
+						avg = avg.DivScalar(float64(AvgDepth))
+						// avg := colour
+
+						//Map to texture
+						r := uint8(math.Max(math.Min(255*avg.R, 255), 0))
+						g := uint8(math.Max(math.Min(255*avg.G, 255), 0))
+						b := uint8(math.Max(math.Min(255*avg.B, 255), 0))
+						tex.Set(x, y, Pixel{
+							R: r,
+							G: g,
+							B: b,
+						})
+					} else {
+						tex.Set(x, y, tex.Get(xi, yi))
 					}
-					avg = avg.DivScalar(float64(AvgDepth))
-					// avg := colour
-
-					//Map to texture
-					r := uint8(math.Max(math.Min(255*avg.R, 255), 0))
-					g := uint8(math.Max(math.Min(255*avg.G, 255), 0))
-					b := uint8(math.Max(math.Min(255*avg.B, 255), 0))
-					tex.Set(x, y, Pixel{
-						R: r,
-						G: g,
-						B: b,
-					})
-				} else {
-					tex.Set(x, y, tex.Get(xi, yi))
 				}
 			}
 			wait.Done()
-		}(y)
+		}(yy)
 	}
 	wait.Wait()
 
