@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"math"
 )
 
@@ -47,6 +46,14 @@ func (col Colour) DivScalar(scalar float64) Colour {
 	}
 }
 
+func (col Colour) Clamp() Colour {
+	return Colour{
+		R: math.Max(math.Min(col.R, 1.0), 0.0),
+		G: math.Max(math.Min(col.G, 1.0), 0.0),
+		B: math.Max(math.Min(col.B, 1.0), 0.0),
+	}
+}
+
 type Material struct {
 	SurfaceColour Colour
 	Diffuse       float64
@@ -54,43 +61,12 @@ type Material struct {
 	Emissive      float64
 }
 
-//Calculate colour based on light that falls on it
-func (mat *Material) CalculateColour(diffuse Colour, metallic Colour) Colour {
-	var colour Colour
-
-	total := mat.Diffuse + mat.Metallic
-
-	if mat.Diffuse > Epsilon {
-		colour = mat.SurfaceColour.Mul(diffuse.MulScalar(mat.Diffuse))
-	}
-
-	if mat.Metallic > Epsilon {
-		colour = colour.Add(metallic.MulScalar(mat.Metallic)).DivScalar(total)
-	}
-
-	colour = colour.Add(mat.SurfaceColour.MulScalar(mat.Emissive))
-	if math.IsNaN(colour.R) {
-		fmt.Println(colour)
-	}
-
-	return colour
-}
-
-var rseed uint32
-
-//https://stackoverflow.com/questions/26237419/faster-than-rand
-//Range [0,1)
-func FastRandF() float64 {
-	rseed = 214013*rseed + 2531011
-	// return float64((rseed>>16)&0x7FFF) / 32767.0
-	return float64(rseed>>16) / 65536.0
-}
-
 //https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-overview/light-transport-ray-tracing-whitted
 
-func DiffuseRay(incoming Ray, normal Vec3, collide Vec3) Ray {
+func DiffuseRay(normal Vec3, collide Vec3) Ray {
+	randomDir := Vec3{FastRandF()*2 - 1, FastRandF()*2 - 1, FastRandF()*2 - 1}
 
-	dir := normal.Perpendicular().Lerp(normal, FastRandF()).Rotate(normal, FastRandF()*Tau)
+	dir := normal.Add(randomDir)
 
 	return Ray{
 		Pos: collide,
@@ -107,3 +83,59 @@ func MetallicRay(incoming Ray, normal Vec3, collide Vec3) Ray {
 		Dir: dir,
 	}
 }
+
+func (mat *Material) RayCast(hitRay Ray, hitPos Vec3, normal Vec3, triangles *[]Triangle, bounces int, prevTri int) Colour {
+	// var colour Colour
+
+	var diffuse Colour
+	var metallic Colour
+	var emissive Colour
+
+	var totalWeight float64 = 0.0
+
+	if mat.Diffuse > Epsilon {
+		ray := DiffuseRay(normal, hitPos)
+		diffuse = ray.RayCast(triangles, bounces, prevTri)
+
+		diffuse = mat.SurfaceColour.Mul(diffuse).MulScalar(mat.Diffuse)
+		totalWeight += mat.Diffuse
+	}
+
+	if mat.Metallic > Epsilon {
+		ray := MetallicRay(hitRay, normal, hitPos)
+		metallic = ray.RayCast(triangles, bounces, prevTri)
+
+		// metallic = mat.SurfaceColour.MulScalar(1-mat.Metallic).Add(metallic.MulScalar(mat.Metallic))
+		metallic = metallic.MulScalar(mat.Metallic)
+		totalWeight += mat.Metallic
+	}
+
+	if mat.Emissive > Epsilon {
+		emissive = mat.SurfaceColour.MulScalar(mat.Emissive)
+		totalWeight += mat.Emissive
+	}
+
+	return diffuse.Add(metallic).Add(emissive).DivScalar(totalWeight)
+}
+
+// //Calculate colour based on light that falls on it
+// func (mat *Material) CalculateColour(diffuse Colour, metallic Colour) Colour {
+// 	var colour Colour
+
+// 	total := mat.Diffuse + mat.Metallic
+
+// 	if mat.Diffuse > Epsilon {
+// 		colour = mat.SurfaceColour.Mul(diffuse.MulScalar(mat.Diffuse))
+// 	}
+
+// 	if mat.Metallic > Epsilon {
+// 		colour = colour.Add(metallic.MulScalar(mat.Metallic)).DivScalar(total)
+// 	}
+
+// 	colour = colour.Add(mat.SurfaceColour.MulScalar(mat.Emissive))
+// 	if math.IsNaN(colour.R) {
+// 		fmt.Println(colour)
+// 	}
+
+// 	return colour
+// }
