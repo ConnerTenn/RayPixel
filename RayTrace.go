@@ -129,16 +129,27 @@ func (ray Ray) RayCast(triangles *[]Triangle, bounces int, prevTri int) Colour {
 		return NewColour(0, 0, 0)
 	}
 }
+func (ray Ray) RayCastMany(triangles *[]Triangle, bounces int, prevTri int) Colour {
+	var colour Colour
+	for i := 0; i < 10; i++ {
+		randRay := Vec3{FastRandF()*2 - 1, FastRandF()*2 - 1, FastRandF()*2 - 1}
+		newray := ray
+		newray.Pos = newray.Pos.Add(randRay.MulScalar(0.1))
+		//Raycast
+		colour = colour.Add(newray.RayCast(triangles, bounces, prevTri))
+	}
+	return colour.DivScalar(10)
+}
 
 type Camera struct {
 	Position Vec3
 	Rotation Vec3
 }
 
-func (cam *Camera) GetRay(x int, y int) Ray {
+func (cam *Camera) GetRay(x float64, y float64) Ray {
 	ray := Ray{
 		Pos: cam.Position,
-		Dir: RayDir(50, x, y, WindowWidth, WindowHeight),
+		Dir: RayDir(50, x, y),
 	}
 
 	ray.Dir = ray.Dir.Rotate(
@@ -158,14 +169,25 @@ func (cam *Camera) GetRay(x int, y int) Ray {
 }
 
 var NumSamples int
-var FrameBuf [WindowHeight][WindowWidth]Colour
+
+// Define the size of the pixel grid
+const PixelSize int = 8
+
+const AvgDepth int = 1
+
+var FrameBuf [WindowHeight / PixelSize][WindowWidth / PixelSize][AvgDepth]Colour
+var FrameIdx = 0
+
+var timestep int
 
 func Render(tex *Texture, triangles []Triangle) {
-
+	timestep++
 	cam := Camera{
-		Position: Vec3{X: 0, Y: -8, Z: 8},
+		Position: Vec3{X: 0, Y: -18, Z: 8},
 		Rotation: Vec3{X: -Tau * 0.04, Y: 0, Z: 0},
 	}
+	cam.Position = cam.Position.Rotate(Vec3{0, 0, 1}, float64(timestep)/100)
+	cam.Rotation.Z = float64(timestep) / 100
 	NumSamples++
 
 	wait := sync.WaitGroup{}
@@ -173,8 +195,10 @@ func Render(tex *Texture, triangles []Triangle) {
 		wait.Add(1)
 		go func(y int) {
 			for x := 0; x < tex.Width; x++ {
-				xi := x / PixelSize * PixelSize
-				yi := y / PixelSize * PixelSize
+				xf := x / PixelSize
+				yf := y / PixelSize
+				xi := xf * PixelSize
+				yi := yf * PixelSize
 				if x%PixelSize == 0 && y%PixelSize == 0 {
 					vx := float64(x) - float64(tex.Width)/2.0
 					vy := float64(y) - float64(tex.Height)/2.0
@@ -182,12 +206,16 @@ func Render(tex *Texture, triangles []Triangle) {
 					ray := cam.GetRay(vx/float64(tex.Height), vy/float64(tex.Height))
 
 					//Start Raytracing
-					colour := ray.RayCast(&triangles, 0, -1)
+					colour := ray.RayCastMany(&triangles, 0, -1)
 
 					//'Accumulate light' and average
-					FrameBuf[y][x] = FrameBuf[y][x].Add(colour)
-					avg := FrameBuf[y][x].DivScalar(float64(NumSamples))
-					avg = colour
+					FrameBuf[yf][xf][FrameIdx] = colour
+					avg := Colour{}
+					for i := 0; i < AvgDepth; i++ {
+						avg = avg.Add(FrameBuf[yf][xf][(FrameIdx+i)%AvgDepth])
+					}
+					avg = avg.DivScalar(float64(AvgDepth))
+					// avg := colour
 
 					//Map to texture
 					r := uint8(math.Max(math.Min(255*avg.R, 255), 0))
@@ -206,4 +234,6 @@ func Render(tex *Texture, triangles []Triangle) {
 		}(y)
 	}
 	wait.Wait()
+
+	FrameIdx = (FrameIdx + 1) % AvgDepth
 }
