@@ -73,12 +73,11 @@ func (ray *Ray) Intersect(tri *Triangle) (bool, Vec3, Vec3) {
 	return true, intersection, barry
 }
 
-func RayDir(fov float64, x int, y int, width int, height int) Vec3 {
-	size := NewVec2(float64(width), float64(height))
-	xz := NewVec2(float64(x), float64(y)).Sub(size.DivScalar(2.0))
+func RayDir(fov float64, x float64, y float64) Vec3 {
+	xz := NewVec2(x, y)
 
 	halfFov := math.Tan(ToRadians(90.0 - fov*0.5))
-	ypart := size.Y * 0.5 * halfFov
+	ypart := 0.5 * halfFov
 
 	return NewVec3(xz.X, ypart, -xz.Y).Normalize()
 }
@@ -174,25 +173,34 @@ func Render(tex *Texture, triangles []Triangle) {
 		wait.Add(1)
 		go func(y int) {
 			for x := 0; x < tex.Width; x++ {
-				//Generate Ray
-				ray := cam.GetRay(x, y)
+				xi := x / PixelSize * PixelSize
+				yi := y / PixelSize * PixelSize
+				if x%PixelSize == 0 && y%PixelSize == 0 {
+					vx := float64(x) - float64(tex.Width)/2.0
+					vy := float64(y) - float64(tex.Height)/2.0
+					//Generate Ray
+					ray := cam.GetRay(vx/float64(tex.Height), vy/float64(tex.Height))
 
-				//Start Raytracing
-				colour := ray.RayCast(&triangles, 0, -1)
+					//Start Raytracing
+					colour := ray.RayCast(&triangles, 0, -1)
 
-				//'Accumulate light' and average
-				FrameBuf[y][x] = FrameBuf[y][x].Add(colour)
-				avg := FrameBuf[y][x].DivScalar(float64(NumSamples))
+					//'Accumulate light' and average
+					FrameBuf[y][x] = FrameBuf[y][x].Add(colour)
+					avg := FrameBuf[y][x].DivScalar(float64(NumSamples))
+					avg = colour
 
-				//Map to texture
-				r := uint8(math.Max(math.Min(255*avg.R, 255), 0))
-				g := uint8(math.Max(math.Min(255*avg.G, 255), 0))
-				b := uint8(math.Max(math.Min(255*avg.B, 255), 0))
-				tex.Set(x, y, Pixel{
-					R: r,
-					G: g,
-					B: b,
-				})
+					//Map to texture
+					r := uint8(math.Max(math.Min(255*avg.R, 255), 0))
+					g := uint8(math.Max(math.Min(255*avg.G, 255), 0))
+					b := uint8(math.Max(math.Min(255*avg.B, 255), 0))
+					tex.Set(x, y, Pixel{
+						R: r,
+						G: g,
+						B: b,
+					})
+				} else {
+					tex.Set(x, y, tex.Get(xi, yi))
+				}
 			}
 			wait.Done()
 		}(y)

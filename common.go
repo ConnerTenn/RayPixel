@@ -49,6 +49,9 @@ func (tex *Texture) ToByteArray() []byte {
 func (tex *Texture) Set(x int, y int, pixel Pixel) {
 	tex.Data[y*tex.Width+x] = pixel
 }
+func (tex *Texture) Get(x int, y int) Pixel {
+	return tex.Data[y*tex.Width+x]
+}
 
 func (tex *Texture) Update() {
 	tex.SdlTex.Update(nil, (*(*[1]byte)(unsafe.Pointer(&tex.Data[0])))[:], tex.Width*4)

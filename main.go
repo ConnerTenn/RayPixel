@@ -26,7 +26,7 @@ func main() {
 	model.Rotate(stl.Vec3{0, 0, 0}, stl.Vec3{1, 0, 0}, Tau/4)
 	model.Rotate(stl.Vec3{0, 0, 0}, stl.Vec3{0, 0, 1}, Tau/8)
 	min := model.Measure().Min
-	model.Translate(stl.Vec3{-1.5, 10, -min[2]})
+	model.Translate(stl.Vec3{-1.5, 0, -min[2]})
 
 	triangles := make([]Triangle, 1)
 	for _, tri := range model.Triangles {
@@ -70,9 +70,9 @@ func main() {
 			},
 		),
 		NewTriangle(
-			NewVec3(8, 20, 0),
-			NewVec3(8, 0, 0),
-			NewVec3(8, 0, 10),
+			NewVec3(8, 10, 0),
+			NewVec3(8, -10, 0),
+			NewVec3(8, -10, 10),
 			Material{
 				SurfaceColour: NewColour(1, 0.2, 1),
 				Diffuse:       0,
@@ -81,9 +81,9 @@ func main() {
 			},
 		),
 		NewTriangle(
-			NewVec3(-8, 0, 0),
-			NewVec3(-8, 20, 0),
-			NewVec3(-8, 0, 10),
+			NewVec3(-8, -10, 0),
+			NewVec3(-8, 10, 0),
+			NewVec3(-8, -10, 10),
 			Material{
 				SurfaceColour: NewColour(0.2, 0.2, 1),
 				Diffuse:       0,
