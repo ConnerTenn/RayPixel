@@ -77,7 +77,7 @@ func main() {
 				SurfaceColour: NewColour(1, 0.2, 1),
 				Diffuse:       0,
 				Metallic:      0,
-				Emissive:      5,
+				Emissive:      0.5,
 			},
 		),
 		NewTriangle(
@@ -88,7 +88,7 @@ func main() {
 				SurfaceColour: NewColour(0.2, 0.2, 1),
 				Diffuse:       0,
 				Metallic:      0,
-				Emissive:      5,
+				Emissive:      0.5,
 			},
 		),
 	}...)

@@ -17,7 +17,7 @@ type Line struct {
 	P2 Vec3
 }
 
-//Counter clockwise for normal facing camera
+// Counter clockwise for normal facing camera
 type Triangle struct {
 	P1 Vec3
 	P2 Vec3
@@ -46,9 +46,9 @@ func NewTriangle(p1 Vec3, p2 Vec3, p3 Vec3, mat Material) Triangle {
 	return tri
 }
 
-//https://stackoverflow.com/questions/42740765/intersection-between-line-and-triangle-in-3d
-//https://en.wikipedia.org/wiki/Möller–Trumbore_intersection_algorithm
-//Intersect returns intersection and the barycentric coords
+// https://stackoverflow.com/questions/42740765/intersection-between-line-and-triangle-in-3d
+// https://en.wikipedia.org/wiki/Möller–Trumbore_intersection_algorithm
+// Intersect returns intersection and the barycentric coords
 func (ray *Ray) Intersect(tri *Triangle) (bool, Vec3, Vec3) {
 	det := -ray.Dir.Dot(tri.Cross)
 	//Backface culling
@@ -83,7 +83,7 @@ func RayDir(fov float64, x int, y int, width int, height int) Vec3 {
 	return NewVec3(xz.X, ypart, -xz.Y).Normalize()
 }
 
-func (ray Ray) RayCast(triangles *[]Triangle, bounces int, lastTri int) Colour {
+func (ray Ray) RayCast(triangles *[]Triangle, bounces int, prevTri int) Colour {
 	var nearest *Triangle = nil
 	var hitPos Vec3
 	hitI := -1
@@ -92,7 +92,7 @@ func (ray Ray) RayCast(triangles *[]Triangle, bounces int, lastTri int) Colour {
 	//Find nearest triangle
 	for i := range *triangles {
 		//Bypass the triangle we've already intersected with
-		if i == lastTri {
+		if i == prevTri {
 			continue
 		}
 		intersect, hitpos, _ := ray.Intersect(&(*triangles)[i])
@@ -116,20 +116,10 @@ func (ray Ray) RayCast(triangles *[]Triangle, bounces int, lastTri int) Colour {
 			return nearest.Mat.SurfaceColour
 		}
 
-		//Recursive RayCast for each type of ray
-		var diffuse Colour
-		var metallic Colour
-		//Diffuse
-		if nearest.Mat.Diffuse > Epsilon {
-			diffuse = DiffuseRay(ray, nearest.Normal, hitPos).RayCast(triangles, bounces+1, hitI)
-		}
-		//Metallic
-		if nearest.Mat.Metallic > Epsilon {
-			metallic = MetallicRay(ray, nearest.Normal, hitPos).RayCast(triangles, bounces+1, hitI)
-		}
-
-		//Calculate the colour based on the material
-		return nearest.Mat.CalculateColour(diffuse, metallic)
+		//Raycast off next material
+		distance := ray.Pos.Distance(hitPos)
+		_ = distance
+		return nearest.Mat.RayCast(ray, hitPos, nearest.Normal, triangles, bounces+1, hitI)
 	} else {
 		//sky light calculation
 		sky := (ray.Dir.Dot(Vec3{Z: 1}) + 0.5)

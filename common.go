@@ -71,3 +71,13 @@ func IntMin(a int, b int) int {
 	}
 	return b
 }
+
+// https://stackoverflow.com/questions/26237419/faster-than-rand
+// Range [0,1)
+var rseed uint32
+
+func FastRandF() float64 {
+	rseed = 214013*rseed + 2531011
+	// return float64((rseed>>16)&0x7FFF) / 32767.0
+	return float64(rseed>>16) / 65536.0
+}
